@@ -18,7 +18,6 @@ class DataController: ObservableObject {
         }
     }
     
-    // MARK: - CRUD Operations
     
     func fetchNotes() {
         let request = NSFetchRequest<NoteEntity>(entityName: "NoteEntity")
@@ -54,6 +53,27 @@ class DataController: ObservableObject {
             let note = savedNotes[index]
             container.viewContext.delete(note)
         }
+        save()
+    }
+    
+    func editNote(_ note: NoteEntity, newAttributedContent: NSAttributedString) {
+        note.content = newAttributedContent.string
+        note.attributedContent = try? newAttributedContent.data(
+            from: NSRange(location: 0, length: newAttributedContent.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtfd]
+        )
+        save()
+    }
+    
+    func addNote(attributedContent: NSAttributedString) {
+        let note = NoteEntity(context: container.viewContext)
+        note.id = UUID()
+        note.date = Date()
+        note.content = attributedContent.string
+        note.attributedContent = try? attributedContent.data(
+            from: NSRange(location: 0, length: attributedContent.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtfd]
+        )
         save()
     }
     
