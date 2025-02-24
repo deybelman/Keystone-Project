@@ -1,15 +1,18 @@
 import SwiftUI
+import PhotosUI
 
 struct NoteDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var dataController: DataController
     
-    var note: FetchedResults<NoteEntity>.Element?
+    var note: NoteEntity?
     
     @State private var attributedContent = NSAttributedString(string: "")
     @State private var showingFormatting = false
     @State private var selectedRange = NSRange()
     @State private var currentStyle = TextStyle()
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedTextRange: NSRange?  // Needed to make sure image is attributed to correct text, not the text highlighted when async image loading completes
     
     private var formattedDate: String {
         let formatter = DateFormatter()
@@ -44,20 +47,31 @@ struct NoteDetailView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingFormatting.toggle()
-                    }) {
-                        Image(systemName: "textformat")
+                    HStack {
+                        PhotosPicker(selection: $selectedPhotoItem,
+                                   matching: .images) {
+                            Image(systemName: "photo.badge.plus")
+                        }
+                        
+                        Button(action: {
+                            showingFormatting.toggle()
+                        }) {
+                            Image(systemName: "textformat")
+                        }
                     }
                 }
             }
             .sheet(isPresented: $showingFormatting) {
                 FormatToolbar(
                     attributedText: $attributedContent, 
-                    selectedRange: selectedRange, 
+                    selectedRange: selectedRange,
                     currentStyle: $currentStyle,
                     richTextEditor: richTextEditor
                 )
+                .presentationDetents([.height(70)])
+                .presentationDragIndicator(.hidden)
+                .presentationBackground(.ultraThinMaterial)
+                .presentationBackgroundInteraction(.enabled)
             }
             .onAppear {
                 if let note = note, let data = note.attributedContent,
@@ -71,6 +85,43 @@ struct NoteDetailView: View {
                         string: note?.content ?? "",
                         attributes: [.font: UIFont.systemFont(ofSize: 17)]
                     )
+                }
+            }
+            .onChange(of: selectedPhotoItem) { oldValue, newItem in
+                if let item = newItem {
+                    let associatedID = UUID().uuidString
+                    selectedTextRange = selectedRange
+                    
+                    let mutableAttributedContent = NSMutableAttributedString(attributedString: attributedContent)
+                    // Add the associatedID first
+                    mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"), 
+                                                        value: associatedID, 
+                                                        range: selectedTextRange ?? selectedRange)
+                    // Add the color separately
+                    mutableAttributedContent.addAttribute(.foregroundColor, 
+                                                        value: UIColor.orange, 
+                                                        range: selectedTextRange ?? selectedRange)
+                    attributedContent = mutableAttributedContent
+                    
+                    Task {
+                        guard let data = try? await item.loadTransferable(type: Data.self),
+                              let note = note else { return }
+                        
+                        // Get the selected text
+                        let selectedText = attributedContent.attributedSubstring(
+                            from: selectedTextRange ?? NSRange()
+                        ).string
+                        
+                        // Add the image attachment
+                        dataController.addImageAttachment(
+                            for: note,
+                            imageData: data,
+                            associatedText: selectedText,
+                            associatedID: associatedID
+                        )
+                        
+                        selectedPhotoItem = nil
+                    }
                 }
             }
     }
@@ -136,14 +187,21 @@ struct FormatToolbar: View {
                     }
                 }
                 .padding()
-                Spacer()
             }
-            .navigationTitle("Format")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                        Text("Format")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                    }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(action: {
                         dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.primary)
                     }
                 }
             }

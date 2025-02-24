@@ -6,6 +6,7 @@ struct TextStyle {
     var isItalic: Bool = false
     var isUnderlined: Bool = false
     var isStrikethrough: Bool = false
+    var hasImageAttachment: Bool = false
     
     func apply(to font: UIFont) -> UIFont {
         var traits = font.fontDescriptor.symbolicTraits
@@ -26,12 +27,14 @@ struct TextStyle {
         let traits = font?.fontDescriptor.symbolicTraits ?? []
         let underlineStyle = attributes[.underlineStyle] as? Int
         let strikethroughStyle = attributes[.strikethroughStyle] as? Int
+        let hasImageID = attributes[NSAttributedString.Key("associatedID")] != nil
         
         return TextStyle(
             isBold: traits.contains(.traitBold),
             isItalic: traits.contains(.traitItalic),
             isUnderlined: underlineStyle != nil,
-            isStrikethrough: strikethroughStyle != nil
+            isStrikethrough: strikethroughStyle != nil,
+            hasImageAttachment: hasImageID
         )
     }
 }
@@ -76,6 +79,11 @@ struct RichTextEditor: UIViewRepresentable {
         // Apply strikethrough if needed
         if currentStyle.isStrikethrough {
             attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+        }
+        
+        // Apply orange color if text has image attachment
+        if currentStyle.hasImageAttachment {
+            attributes[.foregroundColor] = UIColor.orange
         }
         
         return attributes

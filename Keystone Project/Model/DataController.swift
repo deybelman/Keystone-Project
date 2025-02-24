@@ -77,7 +77,7 @@ class DataController: ObservableObject {
         save()
     }
     
-    private func save() {
+    func save() {
         do {
             try container.viewContext.save()
             fetchNotes() // Refresh the notes after saving
