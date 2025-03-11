@@ -13,6 +13,9 @@ struct NoteDetailView: View {
     @State private var currentStyle = TextStyle()
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedTextRange: NSRange?  // Needed to make sure image is attributed to correct text, not the text highlighted when async image loading completes
+    //    @State private var showingImageViewer = false
+    //    @State private var selectedAssociatedID: String?
+    @StateObject var imageViewerManager = ImageViewerManager()
     
     private var formattedDate: String {
         let formatter = DateFormatter()
@@ -24,7 +27,29 @@ struct NoteDetailView: View {
         let richTextEditor = RichTextEditor(
             text: $attributedContent,
             selectedRange: $selectedRange,
-            currentStyle: $currentStyle
+            currentStyle: $currentStyle,
+            //            onImageLinkTap: { associatedImageID in
+            //                 print("onImageLinkTapped called with ID: \(associatedImageID)")
+            //                 selectedAssociatedID = "testing1"
+            //                 print("selectedAssociatedID set to: \(selectedAssociatedID ?? "nil")")
+            //                 DispatchQueue.main.async {
+            //                     self.selectedAssociatedID = "testing2"
+            //                 }
+            //                 print("selectedAssociatedID set to: \(selectedAssociatedID ?? "nil")")
+            //                 showingImageViewer = true
+            //             }
+            onImageLinkTap: {url in
+                handleLinkTap(url)
+                return true // Tell rich text editor that we've handled the tap
+            }
+            //            onImageLinkTapped: { associatedImageID in
+            //                print("onImageLinkTapped called with ID: \(associatedImageID)")
+            //                DispatchQueue.main.async {
+            //                    self.selectedAssociatedID = associatedImageID
+            //                    print("selectedAssociatedID set to: \(self.selectedAssociatedID ?? "nil")")
+            //                    self.showingImageViewer = true
+            //                }
+            //            }
         )
         
         richTextEditor
@@ -49,7 +74,7 @@ struct NoteDetailView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
                         PhotosPicker(selection: $selectedPhotoItem,
-                                   matching: .images) {
+                                     matching: .images) {
                             Image(systemName: "photo.badge.plus")
                         }
                         
@@ -63,7 +88,7 @@ struct NoteDetailView: View {
             }
             .sheet(isPresented: $showingFormatting) {
                 FormatToolbar(
-                    attributedText: $attributedContent, 
+                    attributedText: $attributedContent,
                     selectedRange: selectedRange,
                     currentStyle: $currentStyle,
                     richTextEditor: richTextEditor
@@ -72,6 +97,18 @@ struct NoteDetailView: View {
                 .presentationDragIndicator(.hidden)
                 .presentationBackground(.ultraThinMaterial)
                 .presentationBackgroundInteraction(.enabled)
+            }
+        //            .sheet(isPresented: $showingImageViewer) {
+        //                if let imageID = selectedImageID, let note = note {
+        //                    ImageViewerView(note: note, imageID: imageID)
+        //                        .environmentObject(dataController)
+        //                }
+            .sheet(isPresented: $imageViewerManager.showingImageViewer) {
+                let associatedID = imageViewerManager.selectedAssociatedID
+                let note = note
+                
+                ImageViewerView(note: note, associatedID: associatedID)
+                    .environmentObject(dataController)
             }
             .onAppear {
                 if let note = note, let data = note.attributedContent,
@@ -93,14 +130,31 @@ struct NoteDetailView: View {
                     selectedTextRange = selectedRange
                     
                     let mutableAttributedContent = NSMutableAttributedString(attributedString: attributedContent)
+                    
                     // Add the associatedID first
-                    mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"), 
-                                                        value: associatedID, 
-                                                        range: selectedTextRange ?? selectedRange)
+                    mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"),
+                                                          value: associatedID,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
                     // Add the color separately
-                    mutableAttributedContent.addAttribute(.foregroundColor, 
-                                                        value: UIColor.orange, 
-                                                        range: selectedTextRange ?? selectedRange)
+                    mutableAttributedContent.addAttribute(.foregroundColor,
+                                                          value: UIColor.orange,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
+                    // Add underline for links - using a custom key to distinguish from regular underline
+                    mutableAttributedContent.addAttribute(.underlineStyle,
+                                                          value: NSUnderlineStyle.single.rawValue,
+                                                          range: selectedTextRange ?? selectedRange)
+                    mutableAttributedContent.addAttribute(NSAttributedString.Key("linkUnderline"),
+                                                          value: true,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
+                    // Add the link attribute for the selected text
+                    let associatedImageURL = URL(string: "image://\(associatedID)")!
+                    mutableAttributedContent.addAttribute(.link,
+                                                          value: associatedImageURL,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
                     attributedContent = mutableAttributedContent
                     
                     Task {
@@ -125,7 +179,28 @@ struct NoteDetailView: View {
                 }
             }
     }
+    
+    private func handleLinkTap(_ url: URL) -> Bool {
+        guard url.scheme == "image" else {
+            return false
+        }
+        
+        let associatedImageID = url.host ?? ""
+        imageViewerManager.selectedAssociatedID = associatedImageID
+        print("associatedImageID: \(associatedImageID)")
+        print("selectedAssociatedID")
+        imageViewerManager.showingImageViewer = true
+        
+        return true
+    }
+    
+    
+    class ImageViewerManager: ObservableObject {
+        @Published var selectedAssociatedID: String?
+        @Published var showingImageViewer: Bool = false
+    }
 }
+
 
 struct FormatToolbar: View {
     @Binding var attributedText: NSAttributedString

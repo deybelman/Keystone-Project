@@ -7,6 +7,7 @@ struct TextStyle {
     var isUnderlined: Bool = false
     var isStrikethrough: Bool = false
     var hasImageAttachment: Bool = false
+    var isLinkUnderlined: Bool = false
     
     func apply(to font: UIFont) -> UIFont {
         var traits = font.fontDescriptor.symbolicTraits
@@ -27,14 +28,16 @@ struct TextStyle {
         let traits = font?.fontDescriptor.symbolicTraits ?? []
         let underlineStyle = attributes[.underlineStyle] as? Int
         let strikethroughStyle = attributes[.strikethroughStyle] as? Int
-        let hasImageID = attributes[NSAttributedString.Key("associatedID")] != nil
+        let hasAssociatedImageID = attributes[NSAttributedString.Key("associatedID")] != nil
+        let isLinkUnderlined = attributes[NSAttributedString.Key("linkUnderline")] != nil
         
         return TextStyle(
             isBold: traits.contains(.traitBold),
             isItalic: traits.contains(.traitItalic),
-            isUnderlined: underlineStyle != nil,
+            isUnderlined: underlineStyle != nil && !isLinkUnderlined,
             isStrikethrough: strikethroughStyle != nil,
-            hasImageAttachment: hasImageID
+            hasImageAttachment: hasAssociatedImageID,
+            isLinkUnderlined: isLinkUnderlined
         )
     }
 }
@@ -43,6 +46,7 @@ struct RichTextEditor: UIViewRepresentable {
     @Binding var text: NSAttributedString
     @Binding var selectedRange: NSRange
     @Binding var currentStyle: TextStyle
+    var onImageLinkTap: ((URL) -> Bool)?
     
     private let defaultFont = UIFont.systemFont(ofSize: 17)
     
@@ -53,8 +57,10 @@ struct RichTextEditor: UIViewRepresentable {
         textView.isUserInteractionEnabled = true
         textView.backgroundColor = .clear
         textView.font = defaultFont
+        textView.textColor = .label
         textView.delegate = context.coordinator
         textView.typingAttributes = defaultTypingAttributes()
+        textView.linkTextAttributes = [:]
         return textView
     }
     
@@ -71,6 +77,9 @@ struct RichTextEditor: UIViewRepresentable {
         let font = currentStyle.apply(to: defaultFont)
         attributes[.font] = font
         
+        // Set text color to automatically adapt to light/dark mode
+        attributes[.foregroundColor] = UIColor.label
+        
         // Apply underline if needed
         if currentStyle.isUnderlined {
             attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
@@ -80,12 +89,7 @@ struct RichTextEditor: UIViewRepresentable {
         if currentStyle.isStrikethrough {
             attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
         }
-        
-        // Apply orange color if text has image attachment
-        if currentStyle.hasImageAttachment {
-            attributes[.foregroundColor] = UIColor.orange
-        }
-        
+
         return attributes
     }
     
@@ -130,6 +134,11 @@ struct RichTextEditor: UIViewRepresentable {
         
         let mutable = NSMutableAttributedString(attributedString: text)
         let currentAttributes = mutable.attributes(at: selectedRange.location, effectiveRange: nil)
+        
+        // Check if this is a link underline - if so, don't toggle it
+        if currentAttributes[NSAttributedString.Key("linkUnderline")] != nil {
+            return
+        }
         
         var newStyle = TextStyle.current(for: currentAttributes)
         newStyle.isUnderlined.toggle()
@@ -199,6 +208,22 @@ struct RichTextEditor: UIViewRepresentable {
                 let attributes = attributedText.attributes(at: max(textView.selectedRange.location - 1, 0), effectiveRange: nil)
                 parent.currentStyle = TextStyle.current(for: attributes)
             }
+        }
+        
+        func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
+            print("Link tapped with URL: \(URL)")
+            print("URL scheme: \(URL.scheme ?? "nil")")
+            
+            // If it's our custom image URL scheme, handle it ourselves
+            if URL.scheme == "image" {
+//                let associatedID = URL.host ?? ""
+//                print("Image link tapped with ID: \(associatedID)")
+                
+                return parent.onImageLinkTap?(URL) ?? false
+            }
+            
+            // For all other URLs, let the system handle them
+            return true
         }
     }
 } 

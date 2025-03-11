@@ -5,19 +5,16 @@
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         BreakpointExtensionID = "Xcode.Breakpoint.SymbolicBreakpoint">
          <BreakpointContent
-            uuid = "A230AB42-1E98-405B-9771-72BCEB3DABA9"
-            shouldBeEnabled = "Yes"
+            uuid = "6911390A-1A0C-4777-9C19-02CFD06161BC"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Keystone Project/EditNoteView.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "144"
-            endingLineNumber = "144"
-            landmarkName = "body"
-            landmarkType = "24">
+            symbolName = ""
+            moduleName = "">
+            <Locations>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
