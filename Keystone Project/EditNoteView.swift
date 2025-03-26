@@ -11,7 +11,8 @@ struct NoteDetailView: View {
     @State private var showingFormatting = false
     @State private var selectedRange = NSRange()
     @State private var currentStyle = TextStyle()
-    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+//*    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedTextRange: NSRange?  // Needed to make sure image is attributed to correct text, not the text highlighted when async image loading completes
     //    @State private var showingImageViewer = false
     //    @State private var selectedAssociatedID: String?
@@ -33,28 +34,10 @@ struct NoteDetailView: View {
             text: $attributedContent,
             selectedRange: $selectedRange,
             currentStyle: $currentStyle,
-            //            onImageLinkTap: { associatedImageID in
-            //                 print("onImageLinkTapped called with ID: \(associatedImageID)")
-            //                 selectedAssociatedID = "testing1"
-            //                 print("selectedAssociatedID set to: \(selectedAssociatedID ?? "nil")")
-            //                 DispatchQueue.main.async {
-            //                     self.selectedAssociatedID = "testing2"
-            //                 }
-            //                 print("selectedAssociatedID set to: \(selectedAssociatedID ?? "nil")")
-            //                 showingImageViewer = true
-            //             }
             onImageLinkTap: {url in
                 handleLinkTap(url)
                 return true // Tell rich text editor that we've handled the tap
             }
-            //            onImageLinkTapped: { associatedImageID in
-            //                print("onImageLinkTapped called with ID: \(associatedImageID)")
-            //                DispatchQueue.main.async {
-            //                    self.selectedAssociatedID = associatedImageID
-            //                    print("selectedAssociatedID set to: \(self.selectedAssociatedID ?? "nil")")
-            //                    self.showingImageViewer = true
-            //                }
-            //            }
         )
         
         richTextEditor
@@ -78,9 +61,11 @@ struct NoteDetailView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
-                        PhotosPicker(selection: $selectedPhotoItems,
-                                     maxSelectionCount: 10,
-                                     matching: .images) {
+//*                        PhotosPicker(selection: $selectedPhotoItems,
+//                                     maxSelectionCount: 10,
+//*                                     matching: .images) {
+                            PhotosPicker(selection: $selectedPhotoItem,
+                                         matching: .images) {
                             Image(systemName: "photo.badge.plus")
                         }
                         
@@ -130,63 +115,114 @@ struct NoteDetailView: View {
                     )
                 }
             }
-            .onChange(of: selectedPhotoItems) { oldItems, newItems in
-                guard !newItems.isEmpty, let note = note else { return }
+//*            .onChange(of: selectedPhotoItems) { oldItems, newItems in
+//                guard !newItems.isEmpty, let note = note else { return }
+//                
+//                let associatedID = UUID().uuidString
+//                selectedTextRange = selectedRange
+//                let selectedText = attributedContent.attributedSubstring(from: selectedTextRange ?? NSRange()).string
+//                
+//                dataController.createImageGroup(for: note,
+//                                                associatedID: associatedID,
+//                                                associatedText: selectedText)
+//                
+//                let mutableAttributedContent = NSMutableAttributedString(attributedString: attributedContent)
+//                
+//                // Add the associatedID first
+//                mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"),
+//                                                      value: associatedID,
+//                                                      range: selectedTextRange ?? selectedRange)
+//                
+//                // Add the color separately
+//                mutableAttributedContent.addAttribute(.foregroundColor,
+//                                                      value: UIColor.orange,
+//                                                      range: selectedTextRange ?? selectedRange)
+//                
+//                // Add underline for links - using a custom key to distinguish from regular underline
+//                mutableAttributedContent.addAttribute(.underlineStyle,
+//                                                      value: NSUnderlineStyle.single.rawValue,
+//                                                      range: selectedTextRange ?? selectedRange)
+//
+//                mutableAttributedContent.addAttribute(NSAttributedString.Key("linkUnderline"),
+//                                                      value: true,
+//                                                      range: selectedTextRange ?? selectedRange)
+//                
+//                // Add the link attribute for the selected text
+//                let associatedImageURL = URL(string: "image://\(associatedID)")!
+//                mutableAttributedContent.addAttribute(.link,
+//                                                      value: associatedImageURL,
+//*                                                      range: selectedTextRange ?? selectedRange)
                 
-                let associatedID = UUID().uuidString
-                selectedTextRange = selectedRange
-                let selectedText = attributedContent.attributedSubstring(from: selectedTextRange ?? NSRange()).string
-                
-                dataController.createImageGroup(for: note,
-                                                associatedID: associatedID,
-                                                associatedText: selectedText)
-                
-                let mutableAttributedContent = NSMutableAttributedString(attributedString: attributedContent)
-                
-                // Add the associatedID first
-                mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"),
-                                                      value: associatedID,
-                                                      range: selectedTextRange ?? selectedRange)
-                
-                // Add the color separately
-                mutableAttributedContent.addAttribute(.foregroundColor,
-                                                      value: UIColor.orange,
-                                                      range: selectedTextRange ?? selectedRange)
-                
-                // Add underline for links - using a custom key to distinguish from regular underline
-                mutableAttributedContent.addAttribute(.underlineStyle,
-                                                      value: NSUnderlineStyle.single.rawValue,
-                                                      range: selectedTextRange ?? selectedRange)
-                mutableAttributedContent.addAttribute(NSAttributedString.Key("linkUnderline"),
-                                                      value: true,
-                                                      range: selectedTextRange ?? selectedRange)
-                
-                // Add the link attribute for the selected text
-                let associatedImageURL = URL(string: "image://\(associatedID)")!
-                mutableAttributedContent.addAttribute(.link,
-                                                      value: associatedImageURL,
-                                                      range: selectedTextRange ?? selectedRange)
-                
-                attributedContent = mutableAttributedContent
-                
-                // Process each selected photo item
-                Task {
-                    // Get the image group from the database
-                    guard let imageGroup = dataController.fetchImageGroup(for: note, associatedID: associatedID) else {
-                        return
-                    }
+            .onChange(of: selectedPhotoItem) { oldValue, newItem in
+                if let item = newItem {
+                    let associatedID = UUID().uuidString
+                    selectedTextRange = selectedRange
                     
-                    // Process each photo asynchronously
-                    for item in selectedPhotoItems {
-                        if let data = try? await item.loadTransferable(type: Data.self) {
-                            // Add each image to the group
-                            dataController.addImageToGroup(imageData: data, group: imageGroup)
-                        }
-                    }
+                    let mutableAttributedContent = NSMutableAttributedString(attributedString: attributedContent)
                     
-                    // Reset selection when done
-                    DispatchQueue.main.async {
-                        selectedPhotoItems = []
+                    // Add the associatedID first
+                    mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"),
+                                                          value: associatedID,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
+                    // Add the color separately
+                    mutableAttributedContent.addAttribute(.foregroundColor,
+                                                          value: UIColor.orange,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
+                    // Add underline for links - using a custom key to distinguish from regular underline
+                    mutableAttributedContent.addAttribute(.underlineStyle,
+                                                          value: NSUnderlineStyle.single.rawValue,
+                                                          range: selectedTextRange ?? selectedRange)
+                    mutableAttributedContent.addAttribute(NSAttributedString.Key("linkUnderline"),
+                                                          value: true,
+                                                          range: selectedTextRange ?? selectedRange)
+                    
+                    // Add the link attribute for the selected text
+                    let associatedImageURL = URL(string: "image://\(associatedID)")!
+                    mutableAttributedContent.addAttribute(.link,
+                                                          value: associatedImageURL,
+                                                          range: selectedTextRange ?? selectedRange)
+                    attributedContent = mutableAttributedContent
+                    
+                    //*                // Process each selected photo item
+                    //                Task {
+                    //                    // Get the image group from the database
+                    //                    guard let imageGroup = dataController.fetchImageGroup(for: note, associatedID: associatedID) else {
+                    //                        return
+                    //                    }
+                    //
+                    //                    // Process each photo asynchronously
+                    //                    for item in selectedPhotoItems {
+                    //                        if let data = try? await item.loadTransferable(type: Data.self) {
+                    //                            // Add each image to the group
+                    //                            dataController.addImageToGroup(imageData: data, group: imageGroup)
+                    //                        }
+                    //                    }
+                    //
+                    //                    // Reset selection when done
+                    //                    DispatchQueue.main.async {
+                    //                        selectedPhotoItems = []
+                    //                    }
+                    //  *              }
+                    Task {
+                        guard let data = try? await item.loadTransferable(type: Data.self),
+                              let note = note else { return }
+                        
+                        // Get the selected text
+                        let selectedText = attributedContent.attributedSubstring(
+                            from: selectedTextRange ?? NSRange()
+                        ).string
+                        
+                        // Add the image attachment
+                        dataController.addImageAttachment(
+                            for: note,
+                            imageData: data,
+                            associatedText: selectedText,
+                            associatedID: associatedID
+                        )
+                        
+                        selectedPhotoItem = nil
                     }
                 }
             }

@@ -86,32 +86,32 @@ class DataController: ObservableObject {
         }
     }
     
-//    func addImageAttachment(for note: NoteEntity, imageData: Data, associatedText: String, associatedID: String) {
-//            let attachment = ImageAttachmentEntity(context: container.viewContext)
-//            attachment.id = UUID()
-//            attachment.imageData = imageData
-//    
-//            save()
-//        }
-//    
-//        func fetchImageAttachment(for note: NoteEntity, withID associatedID: String) -> ImageAttachmentEntity? {
-//            guard let attachments = note.attachments?.allObjects as? [ImageAttachmentEntity] else {
-//                print("No attachments found for note")
-//                return nil
-//            }
-//    
-//            let matchingAttachment = attachments.first { attachment in
-//                attachment.associatedID == associatedID
-//            }
-//    
-//            if matchingAttachment != nil {
-//                print("Found attachment with ID: \(associatedID)")
-//            } else {
-//                print("No attachment found with ID: \(associatedID)")
-//            }
-//    
-//            return matchingAttachment
-//        }
+    func addImageAttachment(for note: NoteEntity, imageData: Data, associatedText: String, associatedID: String) {
+            let attachment = ImageAttachmentEntity(context: container.viewContext)
+            attachment.id = UUID()
+            attachment.imageData = imageData
+    
+            save()
+        }
+    
+        func fetchImageAttachment(for note: NoteEntity, withID associatedID: String) -> ImageAttachmentEntity? {
+            guard let attachments = note.attachments?.allObjects as? [ImageAttachmentEntity] else {
+                print("No attachments found for note")
+                return nil
+            }
+    
+            let matchingAttachment = attachments.first { attachment in
+                attachment.associatedID == associatedID
+            }
+    
+            if matchingAttachment != nil {
+                print("Found attachment with ID: \(associatedID)")
+            } else {
+                print("No attachment found with ID: \(associatedID)")
+            }
+    
+            return matchingAttachment
+        }
     
     func createImageGroup(for note: NoteEntity, associatedID: String, associatedText: String) {
         let imageGroup = ImageGroupEntity(context: container.viewContext)
