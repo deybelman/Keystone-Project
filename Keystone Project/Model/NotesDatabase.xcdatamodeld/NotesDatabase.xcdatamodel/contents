@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24B91" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D70" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="ImageAttachmentEntity" representedClassName="ImageAttachmentEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="imageData" attributeType="Binary"/>
+        <relationship name="group" maxCount="1" deletionRule="Nullify" destinationEntity="ImageGroupEntity" inverseName="imageAttachments" inverseEntity="ImageGroupEntity"/>
+    </entity>
+    <entity name="ImageGroupEntity" representedClassName="ImageGroupEntity" syncable="YES" codeGenerationType="class">
         <attribute name="associatedID" optional="YES" attributeType="String"/>
         <attribute name="associatedText" optional="YES" attributeType="String"/>
-        <attribute name="attachedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="imageData" optional="YES" attributeType="Binary"/>
-        <relationship name="note" maxCount="1" deletionRule="Nullify" destinationEntity="NoteEntity" inverseName="attachments" inverseEntity="NoteEntity"/>
+        <relationship name="imageAttachments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ImageAttachmentEntity" inverseName="group" inverseEntity="ImageAttachmentEntity"/>
+        <relationship name="toNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NoteEntity" inverseName="imageGroups" inverseEntity="NoteEntity"/>
     </entity>
     <entity name="NoteEntity" representedClassName="NoteEntity" syncable="YES" codeGenerationType="class">
         <attribute name="attributedContent" optional="YES" attributeType="Binary"/>
         <attribute name="content" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" defaultDateTimeInterval="725788800" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <relationship name="attachments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageAttachmentEntity" inverseName="note" inverseEntity="ImageAttachmentEntity"/>
+        <relationship name="imageGroups" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageGroupEntity" inverseName="toNote" inverseEntity="ImageGroupEntity"/>
     </entity>
 </model>
