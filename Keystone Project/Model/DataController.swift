@@ -92,28 +92,28 @@ class DataController: ObservableObject {
             attachment.imageData = imageData
     
             save()
+    }
+    
+    func fetchImageAttachment(for note: NoteEntity, withID associatedID: String) -> ImageAttachmentEntity? {
+        guard let attachments = note.attachments?.allObjects as? [ImageAttachmentEntity] else {
+            print("No attachments found for note")
+            return nil
         }
-    
-        func fetchImageAttachment(for note: NoteEntity, withID associatedID: String) -> ImageAttachmentEntity? {
-            guard let attachments = note.attachments?.allObjects as? [ImageAttachmentEntity] else {
-                print("No attachments found for note")
-                return nil
-            }
-    
-            let matchingAttachment = attachments.first { attachment in
-                attachment.associatedID == associatedID
-            }
-    
-            if matchingAttachment != nil {
-                print("Found attachment with ID: \(associatedID)")
-            } else {
-                print("No attachment found with ID: \(associatedID)")
-            }
-    
-            return matchingAttachment
+
+        let matchingAttachment = attachments.first { attachment in
+            attachment.associatedID == associatedID
         }
+
+        if matchingAttachment != nil {
+            print("Found attachment with ID: \(associatedID)")
+        } else {
+            print("No attachment found with ID: \(associatedID)")
+        }
+
+        return matchingAttachment
+    }
     
-    func createImageGroup(for note: NoteEntity, associatedID: String, associatedText: String) {
+    func createImageGroup(for note: NoteEntity, associatedID: String, associatedText: String) -> ImageGroupEntity {
         let imageGroup = ImageGroupEntity(context: container.viewContext)
         imageGroup.id = UUID()
         imageGroup.associatedID = associatedID
@@ -121,6 +121,8 @@ class DataController: ObservableObject {
         imageGroup.toNote = note
         
         save()
+        
+        return imageGroup
     }
     
     func addImageToGroup(imageData: Data, group: ImageGroupEntity) {

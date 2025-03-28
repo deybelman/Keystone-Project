@@ -10,7 +10,7 @@
         <attribute name="associatedID" optional="YES" attributeType="String"/>
         <attribute name="associatedText" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <relationship name="imageAttachments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ImageAttachmentEntity" inverseName="group" inverseEntity="ImageAttachmentEntity"/>
+        <relationship name="imageAttachments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageAttachmentEntity" inverseName="group" inverseEntity="ImageAttachmentEntity"/>
         <relationship name="toNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NoteEntity" inverseName="imageGroups" inverseEntity="NoteEntity"/>
     </entity>
     <entity name="NoteEntity" representedClassName="NoteEntity" syncable="YES" codeGenerationType="class">
