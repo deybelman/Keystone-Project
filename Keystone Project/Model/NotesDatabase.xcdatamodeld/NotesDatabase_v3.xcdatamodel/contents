@@ -11,14 +11,22 @@
         <attribute name="associatedText" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="imageAttachments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageAttachmentEntity" inverseName="group" inverseEntity="ImageAttachmentEntity"/>
-        <relationship name="toNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="JournalDayEntity" inverseName="imageGroups" inverseEntity="JournalDayEntity"/>
+        <relationship name="toNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="JournalEntryEntity" inverseName="imageGroups" inverseEntity="JournalEntryEntity"/>
     </entity>
-    <entity name="JournalDayEntity" representedClassName="JournalDayEntity" syncable="YES" codeGenerationType="class">
+    <entity name="JournalEntryEntity" representedClassName="JournalEntryEntity" syncable="YES" codeGenerationType="class">
         <attribute name="attributedContent" optional="YES" attributeType="Binary"/>
         <attribute name="content" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" defaultDateTimeInterval="725788800" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <relationship name="attachments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ImageAttachmentEntity"/>
         <relationship name="imageGroups" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageGroupEntity" inverseName="toNote" inverseEntity="ImageGroupEntity"/>
+        <relationship name="trip" maxCount="1" deletionRule="Nullify" destinationEntity="TripEntity" inverseName="journalEntries" inverseEntity="TripEntity"/>
+    </entity>
+    <entity name="TripEntity" representedClassName="TripEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="tripImage" optional="YES" attributeType="Binary"/>
+        <relationship name="journalEntries" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="JournalEntryEntity" inverseName="trip" inverseEntity="JournalEntryEntity"/>
     </entity>
 </model>

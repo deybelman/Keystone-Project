@@ -7,7 +7,7 @@ class DataController: ObservableObject {
     let container = NSPersistentContainer(name: "NotesDatabase")
     
     // Published property to notify views of changes
-    @Published var savedNotes: [NoteEntity] = []
+    @Published var savedNotes: [JournalEntryEntity] = []
     
     init() {
         container.loadPersistentStores { description, error in
@@ -20,7 +20,7 @@ class DataController: ObservableObject {
     
     
     func fetchNotes() {
-        let request = NSFetchRequest<NoteEntity>(entityName: "NoteEntity")
+        let request = NSFetchRequest<JournalEntryEntity>(entityName: "JournalEntryEntity")
         
         do {
             savedNotes = try container.viewContext.fetch(request)
@@ -30,7 +30,7 @@ class DataController: ObservableObject {
     }
     
     func addNote(content: String) {
-        let note = NoteEntity(context: container.viewContext)
+        let note = JournalEntryEntity(context: container.viewContext)
         note.id = UUID()
         note.content = content
         note.date = Date()
@@ -38,12 +38,12 @@ class DataController: ObservableObject {
         save()
     }
     
-    func editNote(_ note: NoteEntity, newContent: String) {
+    func editNote(_ note: JournalEntryEntity, newContent: String) {
         note.content = newContent
         save()
     }
     
-    func deleteNote(_ note: NoteEntity) {
+    func deleteNote(_ note: JournalEntryEntity) {
         container.viewContext.delete(note)
         save()
     }
@@ -56,7 +56,7 @@ class DataController: ObservableObject {
         save()
     }
     
-    func editNote(_ note: NoteEntity, newAttributedContent: NSAttributedString) {
+    func editNote(_ note: JournalEntryEntity, newAttributedContent: NSAttributedString) {
         note.content = newAttributedContent.string
         note.attributedContent = try? newAttributedContent.data(
             from: NSRange(location: 0, length: newAttributedContent.length),
@@ -66,7 +66,7 @@ class DataController: ObservableObject {
     }
     
     func addNote(attributedContent: NSAttributedString) {
-        let note = NoteEntity(context: container.viewContext)
+        let note = JournalEntryEntity(context: container.viewContext)
         note.id = UUID()
         note.date = Date()
         note.content = attributedContent.string
@@ -86,7 +86,7 @@ class DataController: ObservableObject {
         }
     }
     
-    func addImageAttachment(for note: NoteEntity, imageData: Data, associatedText: String, associatedID: String) {
+    func addImageAttachment(for note: JournalEntryEntity, imageData: Data, associatedText: String, associatedID: String) {
             let attachment = ImageAttachmentEntity(context: container.viewContext)
             attachment.id = UUID()
             attachment.imageData = imageData
@@ -94,7 +94,7 @@ class DataController: ObservableObject {
             save()
     }
     
-    func fetchImageAttachment(for note: NoteEntity, withID associatedID: String) -> ImageAttachmentEntity? {
+    func fetchImageAttachment(for note: JournalEntryEntity, withID associatedID: String) -> ImageAttachmentEntity? {
         guard let attachments = note.attachments?.allObjects as? [ImageAttachmentEntity] else {
             print("No attachments found for note")
             return nil
@@ -113,7 +113,7 @@ class DataController: ObservableObject {
         return matchingAttachment
     }
     
-    func createImageGroup(for note: NoteEntity, associatedID: String, associatedText: String) -> ImageGroupEntity {
+    func createImageGroup(for note: JournalEntryEntity, associatedID: String, associatedText: String) -> ImageGroupEntity {
         let imageGroup = ImageGroupEntity(context: container.viewContext)
         imageGroup.id = UUID()
         imageGroup.associatedID = associatedID
@@ -134,7 +134,7 @@ class DataController: ObservableObject {
         save()
     }
 
-    func fetchImageGroup(for note: NoteEntity, associatedID: String) -> ImageGroupEntity? {
+    func fetchImageGroup(for note: JournalEntryEntity, associatedID: String) -> ImageGroupEntity? {
         let request = NSFetchRequest<ImageGroupEntity>(entityName: "ImageGroupEntity")
         request.predicate = NSPredicate(format: "toNote == %@ AND associatedID == %@", note, associatedID)
         request.fetchLimit = 1

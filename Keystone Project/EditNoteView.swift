@@ -1,11 +1,11 @@
 import SwiftUI
 import PhotosUI
 
-struct NoteDetailView: View {
+struct EditNoteView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var dataController: DataController
     
-    var note: NoteEntity?
+    var note: JournalEntryEntity?
     
     @State private var attributedContent = NSAttributedString(string: "")
     @State private var showingFormatting = false
@@ -59,12 +59,22 @@ struct NoteDetailView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack {
+                        let hasAttachmentInRange = selectedRange.length > 0 ? checkForAttachmentInRange(attributedContent, range: selectedRange) : false
+                        
                         PhotosPicker(selection: $selectedPhotoItems,
-                                      maxSelectionCount: 10,
-//                                     selectionLimit: 1,
+                                     maxSelectionCount: 10,
                                      matching: .images) {
                             Image(systemName: "photo.badge.plus")
+                                .foregroundColor(
+                                    // Only blue when text is selected AND has no image attachment in the entire range
+                                    selectedRange.length > 0 && !hasAttachmentInRange ? 
+                                    .blue : .gray
+                                )
                         }
+                        .disabled(
+                            // Disable the button if no text is selected OR any part of the range has an attachment
+                            selectedRange.length == 0 || hasAttachmentInRange
+                        )
                         
                         Button(action: {
                             showingFormatting.toggle()
@@ -90,12 +100,12 @@ struct NoteDetailView: View {
             }
             .sheet(isPresented: $imageViewerManager.showingImageViewer) {
                 if let associatedGroupID = imageViewerManager.selectedAssociatedID, 
-                    let noteEntity = note {
+                    let journalEntryEntity = note {
                     
-                    let imageGroup = dataController.fetchImageGroup(for: noteEntity, associatedID: associatedGroupID)
+                    let imageGroup = dataController.fetchImageGroup(for: journalEntryEntity, associatedID: associatedGroupID)
                     let associatedText = imageGroup?.associatedText ?? ""
                     
-                    ImageGalleryView(note: noteEntity, imageGroup: imageGroup, associatedText: associatedText)
+                    ImageGalleryView(note: journalEntryEntity, imageGroup: imageGroup, associatedText: associatedText)
                         .environmentObject(dataController)
                 } else {
                     // Fallback view if either value is nil
@@ -103,7 +113,7 @@ struct NoteDetailView: View {
                 }
             }
             .onAppear {
-                if let note = note, let data = note.attributedContent,
+                if let journalEntry = note, let data = note.attributedContent,
                    let attributedString = try? NSAttributedString(
                     data: data,
                     options: [.documentType: NSAttributedString.DocumentType.rtfd],
@@ -154,46 +164,11 @@ struct NoteDetailView: View {
                                                       value: associatedImageURL,
                                                       range: selectedTextRange ?? selectedRange)
                 
-//            .onChange(of: selectedPhotoItem) { oldValue, newItem in
-//                if let item = newItem {
-//                    let associatedID = UUID().uuidString
-//                    selectedTextRange = selectedRange
-//                    
-//                    let mutableAttributedContent = NSMutableAttributedString(attributedString: attributedContent)
-//                    
-//                    // Add the associatedID first
-//                    mutableAttributedContent.addAttribute(NSAttributedString.Key("associatedID"),
-//                                                          value: associatedID,
-//                                                          range: selectedTextRange ?? selectedRange)
-//                    
-//                    // Add the color separately
-//                    mutableAttributedContent.addAttribute(.foregroundColor,
-//                                                          value: UIColor.orange,
-//                                                          range: selectedTextRange ?? selectedRange)
-//                    
-//                    // Add underline for links - using a custom key to distinguish from regular underline
-//                    mutableAttributedContent.addAttribute(.underlineStyle,
-//                                                          value: NSUnderlineStyle.single.rawValue,
-//                                                          range: selectedTextRange ?? selectedRange)
-//                    mutableAttributedContent.addAttribute(NSAttributedString.Key("linkUnderline"),
-//                                                          value: true,
-//                                                          range: selectedTextRange ?? selectedRange)
-//                    
-//                    // Add the link attribute for the selected text
-//                    let associatedImageURL = URL(string: "image://\(associatedID)")!
-//                    mutableAttributedContent.addAttribute(.link,
-//                                                          value: associatedImageURL,
-//                                                          range: selectedTextRange ?? selectedRange)
-                
-                    attributedContent = mutableAttributedContent
+
+                attributedContent = mutableAttributedContent
                     
                     // Process each selected photo item
                     Task {
-//                                        // Get the image group from the database
-//                                        guard let imageGroup = dataController.fetchImageGroup(for: note, associatedID: associatedID) else {
-//                                            return
-//                                        }
-    
                         // Process each photo asynchronously
                         for item in selectedPhotoItems {
                             if let data = try? await item.loadTransferable(type: Data.self) {
@@ -209,25 +184,6 @@ struct NoteDetailView: View {
                         
                         dataController.save()
                     }
-//                    Task {
-//                        guard let data = try? await item.loadTransferable(type: Data.self),
-//                              let note = note else { return }
-//                        
-//                        // Get the selected text
-//                        let selectedText = attributedContent.attributedSubstring(
-//                            from: selectedTextRange ?? NSRange()
-//                        ).string
-//                        
-//                        // Add the image attachment
-//                        dataController.addImageAttachment(
-//                            for: note,
-//                            imageData: data,
-//                            associatedText: selectedText,
-//                            associatedID: associatedID
-//                        )
-//                        
-//                        selectedPhotoItem = nil
-//                    }
                 }
             }
     
@@ -243,6 +199,19 @@ struct NoteDetailView: View {
         imageViewerManager.showingImageViewer = true
         
         return true
+    }
+    
+    private func checkForAttachmentInRange(_ attributedString: NSAttributedString, range: NSRange) -> Bool {
+        var hasAttachment = false
+        attributedString.enumerateAttributes(in: range, options: []) { attributes, _, stop in
+            if attributes[NSAttributedString.Key("associatedID")] != nil || 
+               attributes[NSAttributedString.Key("linkUnderline")] != nil ||
+               attributes[.link] != nil {
+                hasAttachment = true
+                stop.pointee = true
+            }
+        }
+        return hasAttachment
     }
     
 }

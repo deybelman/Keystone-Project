@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ImageGalleryView: View {
-    let note: NoteEntity?
+    let note: JournalEntryEntity?
     let imageGroup: ImageGroupEntity?
     let associatedText: String?
     @Environment(\.dismiss) var dismiss

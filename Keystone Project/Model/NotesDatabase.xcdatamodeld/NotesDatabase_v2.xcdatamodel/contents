@@ -11,9 +11,9 @@
         <attribute name="associatedText" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="imageAttachments" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageAttachmentEntity" inverseName="group" inverseEntity="ImageAttachmentEntity"/>
-        <relationship name="toNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NoteEntity" inverseName="imageGroups" inverseEntity="NoteEntity"/>
+        <relationship name="toNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="JournalDayEntity" inverseName="imageGroups" inverseEntity="JournalDayEntity"/>
     </entity>
-    <entity name="NoteEntity" representedClassName="NoteEntity" syncable="YES" codeGenerationType="class">
+    <entity name="JournalDayEntity" representedClassName="JournalDayEntity" syncable="YES" codeGenerationType="class">
         <attribute name="attributedContent" optional="YES" attributeType="Binary"/>
         <attribute name="content" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" defaultDateTimeInterval="725788800" usesScalarValueType="NO"/>

@@ -14,7 +14,7 @@ struct NoteListView: View {
         return content
     }
     
-    private var sortedNotes: [NoteEntity] {
+    private var sortedNotes: [JournalEntryEntity] {
         dataController.savedNotes.sorted { $0.date ?? Date() > $1.date ?? Date() }
     }
     
@@ -22,7 +22,7 @@ struct NoteListView: View {
         NavigationView {
             List {
                 ForEach(sortedNotes) { note in
-                    NavigationLink(destination: NoteDetailView(note: note)) {
+                    NavigationLink(destination: EditNoteView(note: note)) {
                         VStack(alignment: .leading) {
                             Text(truncatedContent(note.content))
                                 .font(.headline)
@@ -43,7 +43,7 @@ struct NoteListView: View {
             .navigationTitle("My Trip Notes")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: NoteDetailView(note: nil)) {
+                    NavigationLink(destination: EditNoteView(note: nil)) {
                         Image(systemName: "plus")
                     }
                 }
