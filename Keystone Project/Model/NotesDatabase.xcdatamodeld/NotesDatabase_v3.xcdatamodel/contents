@@ -19,7 +19,7 @@
         <attribute name="date" optional="YES" attributeType="Date" defaultDateTimeInterval="725788800" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="imageGroups" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ImageGroupEntity" inverseName="toNote" inverseEntity="ImageGroupEntity"/>
-        <relationship name="trip" maxCount="1" deletionRule="Nullify" destinationEntity="TripEntity" inverseName="journalEntries" inverseEntity="TripEntity"/>
+        <relationship name="trip" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TripEntity" inverseName="journalEntries" inverseEntity="TripEntity"/>
     </entity>
     <entity name="TripEntity" representedClassName="TripEntity" syncable="YES" codeGenerationType="class">
         <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

@@ -113,7 +113,7 @@ struct EditNoteView: View {
                 }
             }
             .onAppear {
-                if let journalEntry = note, let data = note.attributedContent,
+                if let note = note, let data = note.attributedContent,
                    let attributedString = try? NSAttributedString(
                     data: data,
                     options: [.documentType: NSAttributedString.DocumentType.rtfd],

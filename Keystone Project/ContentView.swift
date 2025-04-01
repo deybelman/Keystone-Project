@@ -21,6 +21,13 @@ struct ContentView: View {
                 }
                 .tag(0)
             
+            TripListView()
+                .environmentObject(dataController)
+                .tabItem {
+                    Image(systemName: "airplane")
+                    Text("Trips")
+                }
+            
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear")

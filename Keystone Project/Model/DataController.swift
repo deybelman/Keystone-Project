@@ -7,6 +7,7 @@ class DataController: ObservableObject {
     let container = NSPersistentContainer(name: "NotesDatabase")
     
     // Published property to notify views of changes
+    @Published var savedTrips: [TripEntity] = []
     @Published var savedNotes: [JournalEntryEntity] = []
     
     init() {
@@ -15,9 +16,47 @@ class DataController: ObservableObject {
                 print("Failed to load data in DataController \(error.localizedDescription)")
             }
             self.fetchNotes()
+            self.fetchTrips()
         }
     }
     
+    func save() {
+        do {
+            try container.viewContext.save()
+            fetchNotes() // Refresh the notes after saving
+            fetchTrips()
+        } catch {
+            print("Error saving context: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Trip Operations
+    
+    func addTrip(name: String, startDate: Date, endDate: Date, tripImage: Data? = nil) {
+        let trip = TripEntity(context: container.viewContext)
+        trip.id = UUID()
+        trip.name = name
+        trip.startDate = startDate
+        trip.endDate = endDate
+        trip.tripImage = tripImage
+        save()
+    }
+    
+    func deleteTrip(_ trip: TripEntity) {
+        container.viewContext.delete(trip)
+        save()
+    }
+
+    func fetchTrips() {
+        let request = NSFetchRequest<TripEntity>(entityName: "TripEntity")
+        do {
+            savedTrips = try container.viewContext.fetch(request)
+        } catch {
+            print("Error fetching trips: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Journal Entry Operations
     
     func fetchNotes() {
         let request = NSFetchRequest<JournalEntryEntity>(entityName: "JournalEntryEntity")
@@ -77,41 +116,7 @@ class DataController: ObservableObject {
         save()
     }
     
-    func save() {
-        do {
-            try container.viewContext.save()
-            fetchNotes() // Refresh the notes after saving
-        } catch {
-            print("Error saving context: \(error.localizedDescription)")
-        }
-    }
-    
-    func addImageAttachment(for note: JournalEntryEntity, imageData: Data, associatedText: String, associatedID: String) {
-            let attachment = ImageAttachmentEntity(context: container.viewContext)
-            attachment.id = UUID()
-            attachment.imageData = imageData
-    
-            save()
-    }
-    
-    func fetchImageAttachment(for note: JournalEntryEntity, withID associatedID: String) -> ImageAttachmentEntity? {
-        guard let attachments = note.attachments?.allObjects as? [ImageAttachmentEntity] else {
-            print("No attachments found for note")
-            return nil
-        }
-
-        let matchingAttachment = attachments.first { attachment in
-            attachment.associatedID == associatedID
-        }
-
-        if matchingAttachment != nil {
-            print("Found attachment with ID: \(associatedID)")
-        } else {
-            print("No attachment found with ID: \(associatedID)")
-        }
-
-        return matchingAttachment
-    }
+    // MARK: - Image Operations
     
     func createImageGroup(for note: JournalEntryEntity, associatedID: String, associatedText: String) -> ImageGroupEntity {
         let imageGroup = ImageGroupEntity(context: container.viewContext)
