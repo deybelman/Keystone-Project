@@ -38,8 +38,8 @@ struct TripListView: View {
                                 Text(trip.name ?? "Untitled Trip")
                                     .font(.headline)
                                 
-                                if let startDate = trip.startDate, let endDate = trip.endDate {
-                                    Text(dateRangeText(from: startDate, to: endDate))
+                                if let startDate = trip.startDate {
+                                    Text(dateRangeText(from: startDate, to: trip.endDate))
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                 }
@@ -66,11 +66,24 @@ struct TripListView: View {
         }
     }
     
-    private func dateRangeText(from startDate: Date, to endDate: Date) -> String {
+    private func dateRangeText(from startDate: Date, to endDate: Date?) -> AttributedString {
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .medium
         dateFormatter.timeStyle = .none
         
-        return "\(dateFormatter.string(from: startDate)) - \(dateFormatter.string(from: endDate))"
+        let startDateString = dateFormatter.string(from: startDate)
+        if let endDate = endDate {
+            return AttributedString("\(startDateString) - \(dateFormatter.string(from: endDate))")
+        } else {
+            let baseString = "\(startDateString) - ∞"
+            var attributedString = AttributedString(baseString)
+            
+            // Find the range of the infinity symbol
+            if let infinityRange = attributedString.range(of: "∞") {
+                attributedString[infinityRange].font = .system(size: 18)
+            }
+            
+            return attributedString
+        }
     }
 }

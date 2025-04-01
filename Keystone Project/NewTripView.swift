@@ -6,12 +6,34 @@ struct NewTripView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataController: DataController
     
-    @State private var tripName = ""
-    @State private var startDate = Date()
-    @State private var endDate = Date().addingTimeInterval(86400 * 7) // One week from current date
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var tripImage: Data?
-    @FocusState private var isTextFieldFocused: Bool
+    @State var tripName: String
+    @State var startDate: Date
+    @State var endDate: Date
+    @State var selectedPhotoItem: PhotosPickerItem?
+    @State var tripImage: Data?
+    @FocusState var isTextFieldFocused: Bool
+    @State var isInfiniteDuration: Bool
+    
+    var title: String
+    var onSave: ((String, Date, Date?, Data?) -> Void)?
+    
+    init(
+        tripName: String = "",
+        startDate: Date = Date(),
+        endDate: Date = Date().addingTimeInterval(86400 * 7),
+        tripImage: Data? = nil,
+        isInfiniteDuration: Bool = false,
+        title: String = "New Trip",
+        onSave: ((String, Date, Date?, Data?) -> Void)? = nil
+    ) {
+        _tripName = State(initialValue: tripName)
+        _startDate = State(initialValue: startDate)
+        _endDate = State(initialValue: endDate)
+        _tripImage = State(initialValue: tripImage)
+        _isInfiniteDuration = State(initialValue: isInfiniteDuration)
+        self.title = title
+        self.onSave = onSave
+    }
     
     var body: some View {
         NavigationView {
@@ -28,14 +50,39 @@ struct NewTripView: View {
                             isTextFieldFocused = false
                         }
                     
-                    DatePicker("End Date",
-                              selection: $endDate,
-                              in: startDate...,
-                              displayedComponents: .date)
-                        .onTapGesture {
+                    HStack(spacing: 8) {
+                        Text("End Date")
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            isInfiniteDuration.toggle()
                             hideKeyboard()
                             isTextFieldFocused = false
+                        }) {
+                            Image(systemName: "infinity")
+                                .frame(width: 30, height: 30)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(isInfiniteDuration ? Color.blue : Color.gray.opacity(0.15))
+                                )
+                                .foregroundColor(isInfiniteDuration ? .white : .primary)
                         }
+                        .buttonStyle(.plain)
+                        
+                        DatePicker("", // Empty title since we're using custom label
+                                  selection: $endDate,
+                                  in: startDate...,
+                                  displayedComponents: .date)
+                            .labelsHidden() // Hide the default label
+                            .disabled(isInfiniteDuration)
+                            .opacity(isInfiniteDuration ? 0.5 : 1)
+                            .onTapGesture {
+                                hideKeyboard()
+                                isTextFieldFocused = false
+                            }
+                    }
                 }
                 
                 Section(header: Text("Trip Photo (Optional)")) {
@@ -75,7 +122,7 @@ struct NewTripView: View {
                             }
                         }
                         
-                        if selectedPhotoItem != nil {
+                        if tripImage != nil {
                             Button(role: .destructive) {
                                 selectedPhotoItem = nil
                                 tripImage = nil
@@ -86,18 +133,21 @@ struct NewTripView: View {
                             .foregroundColor(.red)
                             .padding(.top, 4)
                         }
-                        
                     }
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            .navigationTitle("New Trip")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        saveTrip()
+                        if let onSave = onSave {
+                            onSave(tripName, startDate, isInfiniteDuration ? nil : endDate, tripImage)
+                        } else {
+                            saveTrip()
+                        }
                         dismiss()
                     }
                     .disabled(tripName.isEmpty)
@@ -112,20 +162,16 @@ struct NewTripView: View {
         }
     }
     
-    private func saveTrip() {
+    func saveTrip() {
         // If user didn't enter a name, use "Untitled Trip" as fallback
         let finalName = tripName.isEmpty ? "Untitled Trip" : tripName
         
         dataController.addTrip(
             name: finalName,
             startDate: startDate,
-            endDate: endDate,
+            endDate: isInfiniteDuration ? nil : endDate,
             tripImage: tripImage
         )
-    }
-    
-    private func checkSelectedImageExists() -> Bool {
-        return selectedPhotoItem != nil
     }
 }
 

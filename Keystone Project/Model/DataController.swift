@@ -32,7 +32,7 @@ class DataController: ObservableObject {
     
     // MARK: - Trip Operations
     
-    func addTrip(name: String, startDate: Date, endDate: Date, tripImage: Data? = nil) {
+    func addTrip(name: String, startDate: Date, endDate: Date?, tripImage: Data? = nil) {
         let trip = TripEntity(context: container.viewContext)
         trip.id = UUID()
         trip.name = name
