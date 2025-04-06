@@ -3,6 +3,10 @@ import SwiftUI
 struct TripDetailView: View {
     let trip: TripEntity
     @State private var showingEditSheet = false
+    @EnvironmentObject var dataController: DataController
+    @State private var journalEntries: [JournalEntryEntity] = []
+    @State private var selectedDate: Date?
+    @State private var selectedNote: JournalEntryEntity?
 
     var body: some View {
         ScrollView {
@@ -65,15 +69,30 @@ struct TripDetailView: View {
                 HStack {
                     Spacer()
                     // Calendar Section with horizontal padding
-                    TripCalendarView(selectedDate: .constant(nil),
+                    TripCalendarView(selectedDate: $selectedDate,
                                      startDate: trip.startDate!,
-                                     endDate: trip.endDate)
+                                     endDate: trip.endDate,
+                                     journalEntries: journalEntries)
                     
                     Spacer()
                 }
                 
                 Spacer()
             }
+            // Hidden NavigationLink that will be activated when a note is selected
+            .background(
+                NavigationLink(
+                    destination: Group {
+                        if let note = selectedNote {
+                            EditNoteView(note: note)
+                        }
+                    },
+                    isActive: Binding(
+                        get: { selectedNote != nil },
+                        set: { if !$0 { selectedNote = nil; selectedDate = nil } }
+                    )
+                ) { EmptyView() }
+            )
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -84,6 +103,20 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             EditTripView(trip: trip)
+        }
+        .onAppear {
+            journalEntries = dataController.fetchJournalEntriesForTrip(trip)
+        }
+        .onChange(of: selectedDate) { oldDate, newDate in
+            if let date = newDate,
+               let note = journalEntries.first(where: { 
+                   if let noteDate = $0.date {
+                       return Calendar.current.isDate(noteDate, inSameDayAs: date)
+                   }
+                   return false
+               }) {
+                selectedNote = note
+            }
         }
     }
 }

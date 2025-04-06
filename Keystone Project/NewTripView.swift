@@ -166,12 +166,24 @@ struct NewTripView: View {
         // If user didn't enter a name, use "Untitled Trip" as fallback
         let finalName = tripName.isEmpty ? "Untitled Trip" : tripName
         
-        dataController.addTrip(
+        // Create the trip
+        let trip = dataController.addTrip(
             name: finalName,
             startDate: startDate,
             endDate: isInfiniteDuration ? nil : endDate,
             tripImage: tripImage
         )
+        
+        // Create journal entries for each day
+        let calendar = Calendar.current
+        let currentDate = Date()
+        let endDateForEntries = min(isInfiniteDuration ? currentDate : endDate, currentDate)
+        
+        var currentDay = startDate
+        while currentDay <= endDateForEntries {
+            dataController.addJournalEntry(for: trip, date: currentDay)
+            currentDay = calendar.date(byAdding: .day, value: 1, to: currentDay) ?? currentDay
+        }
     }
 }
 

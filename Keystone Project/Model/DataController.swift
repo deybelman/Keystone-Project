@@ -10,6 +10,8 @@ class DataController: ObservableObject {
     @Published var savedTrips: [TripEntity] = []
     @Published var savedNotes: [JournalEntryEntity] = []
     
+    private var calendarDayChangeObserver: NSObjectProtocol?
+    
     init() {
         container.loadPersistentStores { description, error in
             if let error = error {
@@ -17,6 +19,42 @@ class DataController: ObservableObject {
             }
             self.fetchNotes()
             self.fetchTrips()
+            self.setupCalendarDayChangeObserver()
+        }
+    }
+    
+    deinit {
+        if let observer = calendarDayChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
+    private func setupCalendarDayChangeObserver() {
+        calendarDayChangeObserver = NotificationCenter.default.addObserver(
+            forName: .NSCalendarDayChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.checkAndAddNoteForCurrentDay()
+        }
+    }
+    
+    private func isDateWithinTrip(_ date: Date, trip: TripEntity) -> Bool {
+        guard let tripStartDate = trip.startDate else { return false }
+        let currentDate = Date()
+        let tripEndDate = trip.endDate ?? currentDate
+        
+        return date >= tripStartDate && date <= tripEndDate
+    }
+    
+    private func checkAndAddNoteForCurrentDay() {
+        let currentDate = Date()
+        
+        // Create notes for all trips that the current date falls within
+        for trip in savedTrips {
+            if isDateWithinTrip(currentDate, trip: trip) {
+                addJournalEntry(for: trip, date: currentDate)
+            }
         }
     }
     
@@ -32,7 +70,7 @@ class DataController: ObservableObject {
     
     // MARK: - Trip Operations
     
-    func addTrip(name: String, startDate: Date, endDate: Date?, tripImage: Data? = nil) {
+    func addTrip(name: String, startDate: Date, endDate: Date?, tripImage: Data? = nil) -> TripEntity {
         let trip = TripEntity(context: container.viewContext)
         trip.id = UUID()
         trip.name = name
@@ -40,6 +78,7 @@ class DataController: ObservableObject {
         trip.endDate = endDate
         trip.tripImage = tripImage
         save()
+        return trip
     }
     
     func deleteTrip(_ trip: TripEntity) {
@@ -58,6 +97,27 @@ class DataController: ObservableObject {
     
     // MARK: - Journal Entry Operations
     
+    func fetchJournalEntriesForTrip(_ trip: TripEntity) -> [JournalEntryEntity] {
+        let request = NSFetchRequest<JournalEntryEntity>(entityName: "JournalEntryEntity")
+        request.predicate = NSPredicate(format: "trip == %@", trip)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \JournalEntryEntity.date, ascending: true)]
+        
+        do {
+            return try container.viewContext.fetch(request)
+        } catch {
+            print("Error fetching journal entries for trip: \(error.localizedDescription)")
+            return []
+        }
+    }
+    
+    func addJournalEntry(for trip: TripEntity, date: Date) {
+        let entry = JournalEntryEntity(context: container.viewContext)
+        entry.id = UUID()
+        entry.date = date
+        entry.trip = trip
+        save()
+    }
+    
     func fetchNotes() {
         let request = NSFetchRequest<JournalEntryEntity>(entityName: "JournalEntryEntity")
         
@@ -68,30 +128,8 @@ class DataController: ObservableObject {
         }
     }
     
-    func addNote(content: String) {
-        let note = JournalEntryEntity(context: container.viewContext)
-        note.id = UUID()
-        note.content = content
-        note.date = Date()
-        
-        save()
-    }
-    
-    func editNote(_ note: JournalEntryEntity, newContent: String) {
-        note.content = newContent
-        save()
-    }
-    
     func deleteNote(_ note: JournalEntryEntity) {
         container.viewContext.delete(note)
-        save()
-    }
-    
-    func deleteNote(at offsets: IndexSet) {
-        for index in offsets {
-            let note = savedNotes[index]
-            container.viewContext.delete(note)
-        }
         save()
     }
     

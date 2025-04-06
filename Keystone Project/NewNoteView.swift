@@ -18,8 +18,8 @@ struct NewNoteView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        dataController.addNote(content: content)
-                        dismiss()
+//                        dataController.addNote(content: content)
+//                        dismiss()
                     }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
