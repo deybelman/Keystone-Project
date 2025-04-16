@@ -7,6 +7,9 @@ struct TripDetailView: View {
     @State private var journalEntries: [JournalEntryEntity] = []
     @State private var selectedDate: Date?
     @State private var selectedNote: JournalEntryEntity?
+    @State private var tripStartDate: Date?
+    @Environment(\.presentationMode) var presentationMode
+    @State private var navigateToTripList = false
 
     var body: some View {
         ScrollView {
@@ -69,11 +72,12 @@ struct TripDetailView: View {
                 HStack {
                     Spacer()
                     // Calendar Section with horizontal padding
-                    TripCalendarView(selectedDate: $selectedDate,
-                                     startDate: trip.startDate!,
-                                     endDate: trip.endDate,
-                                     journalEntries: journalEntries)
-                    
+                    if let startDate = tripStartDate {
+                        TripCalendarView(selectedDate: $selectedDate,
+                                         startDate: startDate,
+                                         endDate: trip.endDate,
+                                         journalEntries: journalEntries)
+                    }
                     Spacer()
                 }
                 
@@ -101,10 +105,21 @@ struct TripDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingEditSheet) {
+        .sheet(isPresented: $showingEditSheet, onDismiss: {
+            // Check if the trip still exists after the edit sheet is dismissed
+            if !dataController.savedTrips.contains(where: { $0.id == trip.id }) {
+                // Trip was deleted, set flag to navigate back to trip list
+                navigateToTripList = true
+            } else {
+                // Trip still exists, update the journal entries
+                journalEntries = dataController.fetchJournalEntriesForTrip(trip)
+            }
+        }) {
             EditTripView(trip: trip)
         }
         .onAppear {
+            // Store the trip's start date when the view appears
+            tripStartDate = trip.startDate
             journalEntries = dataController.fetchJournalEntriesForTrip(trip)
         }
         .onChange(of: selectedDate) { oldDate, newDate in
@@ -118,6 +133,12 @@ struct TripDetailView: View {
                 selectedNote = note
             }
         }
+        .background(
+            NavigationLink(
+                destination: TripListView(),
+                isActive: $navigateToTripList
+            ) { EmptyView() }
+        )
     }
 }
 

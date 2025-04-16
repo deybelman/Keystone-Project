@@ -5,6 +5,7 @@ struct EditTripView: View {
     let trip: TripEntity
     @EnvironmentObject var dataController: DataController
     @Environment(\.dismiss) var dismiss
+    @Environment(\.presentationMode) var presentationMode
     @State private var showingDeleteConfirmation = false
     
     var body: some View {
@@ -44,7 +45,10 @@ struct EditTripView: View {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
                 dataController.deleteTrip(trip)
+                // Dismiss the edit sheet
                 dismiss()
+                // Pop back to the trip list
+                presentationMode.wrappedValue.dismiss()
             }
         } message: {
             Text("Are you sure you want to delete this trip? This action cannot be undone.")
